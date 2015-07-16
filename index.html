@@ -57,9 +57,9 @@ body {
       <form class="form-signin">
         <h2 class="form-signin-heading">Ephemerics Cloud Manager</h2>
         <div class="alert alert-danger" role="alert"  data-bind="text: loginError, visible: loginError"></div>
-        <label for="inputEmail" class="sr-only">Ephemerics User ID</label>
+        <label for="inputUserID" class="sr-only">Ephemerics User ID</label>
         <input type="text" id="inputUserID" class="form-control" placeholder="User ID" required autofocus data-bind="value: ephemericsUserID">
-        <label for="inputPassword" class="sr-only">Ephemerics Auth Token</label>
+        <label for="inputAuthToken" class="sr-only">Ephemerics Auth Token</label>
         <input type="password" id="inputAuthToken" class="form-control" placeholder="Auth Token" required  data-bind="value: ephemericsAuthToken">
         <button class="btn btn-lg btn-primary btn-block" data-bind="click: tryLogin">Sign in</button>
       </form>
@@ -193,9 +193,15 @@ var ViewModel = function() {
 
 };
 
+
+
+
 var pageModel = new ViewModel();
 ko.applyBindings(pageModel); // This makes Knockout get to work
 </script>
+
+
+
 
 
 
@@ -218,6 +224,11 @@ function ConfigureDZone() {
     });
   }
 }
+
+
 </script>
+
+
+
 </body>
 </html>
