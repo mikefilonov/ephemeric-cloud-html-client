@@ -1,0 +1,236 @@
+<html>
+<head>
+
+
+  <script type='text/javascript' src='https://code.jquery.com/jquery-2.1.4.min.js'></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+  <script type='text/javascript' src='http://ajax.aspnetcdn.com/ajax/knockout/knockout-3.1.0.js'></script>
+
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/4.0.1/dropzone.css">
+
+
+   <link href="signin.css" rel="stylesheet">
+</head>
+<body>
+<style>
+body {
+  padding-top: 40px;
+  padding-bottom: 40px;
+  background-color: #eee;
+}
+
+.form-signin {
+  max-width: 330px;
+  padding: 15px;
+  margin: 0 auto;
+}
+.form-signin .form-signin-heading,
+.form-signin .checkbox {
+  margin-bottom: 10px;
+}
+.form-signin .checkbox {
+  font-weight: normal;
+}
+.form-signin .form-control {
+  position: relative;
+  height: auto;
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+  padding: 10px;
+  font-size: 16px;
+}
+.form-signin .form-control:focus {
+  z-index: 2;
+}
+.form-signin input[type="email"] {
+  margin-bottom: -1px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.form-signin input[type="password"] {
+  margin-bottom: 10px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+</style>
+
+
+
+<div class="container" data-bind="visible: !loginOK()">
+      <form class="form-signin">
+        <h2 class="form-signin-heading">Ephemerics Cloud Manager</h2>
+        <div class="alert alert-danger" role="alert"  data-bind="text: loginError, visible: loginError"></div>
+        <label for="inputEmail" class="sr-only">Ephemerics User ID</label>
+        <input type="text" id="inputUserID" class="form-control" placeholder="User ID" required autofocus data-bind="value: ephemericsUserID">
+        <label for="inputPassword" class="sr-only">Ephemerics Auth Token</label>
+        <input type="password" id="inputAuthToken" class="form-control" placeholder="Auth Token" required  data-bind="value: ephemericsAuthToken">
+        <button class="btn btn-lg btn-primary btn-block" data-bind="click: tryLogin">Sign in</button>
+      </form>
+
+</div>
+
+
+<div class="container" data-bind="visible: loginOK" >
+
+<h1>Active Ephemerics: <span data-bind="text: ephemericsUsed" ></span>/<span data-bind="text: ephemericsLimit"></span></h1>
+
+<div class="progress">
+  <div class="progress-bar" role="progressbar" aria-valuemin="0" data-bind="attr: { 'aria-valuenow': ephemericsUsed, 'aria-valuemax': ephemericsLimit}, style: { width: (100*ephemericsUsed()/ephemericsLimit()) + '%'}">
+    <span class="sr-only"></span>
+  </div>
+</div>
+
+<p><a href="#" data-bind="click: tryLogin" ><span class="glyphicon glyphicon-refresh" aria-hidden="true" ></span> Refresh</a></p>
+
+
+<div class="row" data-bind="foreach: ephemerics">
+<div class="panel panel-default">
+  <div class="panel-body">
+    <h4 data-bind="text: name"></h4>
+    <p><a data-bind="text: hostname, attr: { href: 'http://' + hostname }, click: function() {setTimeout($root.tryLogin, 3000); return true;}" target="_blank"></a></p>
+
+    <div class="btn-group" role="group" class="pull-right">
+      <a class="btn" data-bind="click: function() {pageModel.stop(hostname) }, css: {'btn-default': isRunning, 'btn-warning disabled': !isRunning}"><span class="glyphicon glyphicon-pause" aria-hidden="true"></span></a>
+      <a class="btn" data-bind="css: {'btn-default': !isRunning,'btn-success': isRunning}, attr: { href: 'http://' + hostname }, click: function() {setTimeout($root.tryLogin, 3000); return true;}" target="_blank" ><span class="glyphicon glyphicon-play" aria-hidden="true"></span></a>
+      <a class="btn btn-default" data-bind="click: function() { pageModel.delete(hostname) }"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></a>
+    </div>
+  </div>
+</div>
+
+
+
+
+  </div>
+
+
+
+<div class="panel panel-default"   >
+  <div class="panel-body">
+    <div id="my-awesome-dropzone" class="dropzone"></div>
+
+  </div>
+</div>
+
+
+</div>
+
+
+
+
+
+<script>
+var ViewModel = function() {
+  var self = this;
+  self.ephemericsUserID = ko.observable();
+  self.ephemericsLimit = ko.observable();
+  self.ephemericsUsed = ko.observable();
+  self.ephemericsAuthToken = ko.observable();
+  self.loginOK = ko.observable(false);
+  self.loginError = ko.observable();
+  self.ephemerics = ko.observableArray();
+  self.apiurl = ko.computed(function () {
+    return "https://www.pharocloud.com/api/ephemerics/user/"+self.ephemericsUserID()+"?auth="+self.ephemericsAuthToken()
+  })
+
+  self.ephemericurl = function (ephemericHost) {
+    return "https://www.pharocloud.com/api/ephemerics/user/"+self.ephemericsUserID()+"/" + ephemericHost+"?auth="+self.ephemericsAuthToken()
+  }
+
+  self.ephemericstopurl = function (ephemericHost) {
+    return "https://www.pharocloud.com/api/ephemerics/user/"+self.ephemericsUserID()+"/" + ephemericHost+"/stop?auth="+self.ephemericsAuthToken()
+  }
+
+  self.delete = function(ephemericHost) {
+    if (confirm( 'Confirm delete of ephemeric: ' + ephemericHost)){
+        $.ajax({
+          url: self.ephemericurl(ephemericHost),
+          type: 'DELETE',
+          success: function(result){
+            self.tryLogin();
+          },
+          error: function(){
+            self.loginError("Connection failed");
+            self.loginOK(false);
+          }
+        });
+    }
+  }
+
+
+  self.stop = function(ephemericHost) {
+        $.ajax({
+          url: self.ephemericstopurl(ephemericHost),
+          type: 'GET',
+          success: function(result){
+            self.tryLogin();
+          },
+          error: function(){
+            self.loginError("Connection failed");
+            self.loginOK(false);
+          }
+        });
+  }
+
+  self.tryLogin = function() {
+    $.ajax({
+      url: self.apiurl(),
+      success: function(resultJson){
+        self.loginOK(true);
+        ConfigureDZone();
+        self.ephemerics(resultJson.ephemerics);
+        self.ephemericsLimit(resultJson.limit);
+        self.ephemericsUsed(resultJson.used);
+        $('[data-toggle="tooltip"]').tooltip();
+      },
+      error: function(){
+        self.loginError("Connection failed");
+        self.loginOK(false);
+      }
+    });
+  }
+
+};
+
+
+
+
+var pageModel = new ViewModel();
+ko.applyBindings(pageModel); // This makes Knockout get to work
+</script>
+
+
+
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dropzone/4.0.1/dropzone.js"></script>
+<script>
+Dropzone.autoDiscover = false;
+var myDropzone;
+// "myAwesomeDropzone" is the camelized version of the HTML element's ID
+function ConfigureDZone() {
+  if (!myDropzone) {
+    myDropzone = new Dropzone("div#my-awesome-dropzone", {
+      url: pageModel.apiurl(),
+      paramName: "imageZip", // The name that will be used to transfer the file
+      method: "post",
+      parallelUploads: 1,
+      maxFilesize: 50, // MB
+      acceptedFiles: "application/zip,.zip",
+      dictDefaultMessage: 'Drop new Pharo Image Archive (.zip) to create an Ephemeric instance',
+      success: function() {pageModel.tryLogin()}
+    });
+  }
+}
+
+
+</script>
+
+
+
+</body>
+</html>
