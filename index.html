@@ -1,18 +1,11 @@
 <html>
 <head>
-
-
   <script type='text/javascript' src='https://code.jquery.com/jquery-2.1.4.min.js'></script>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-
-  <script type='text/javascript' src='http://ajax.aspnetcdn.com/ajax/knockout/knockout-3.1.0.js'></script>
-
+  <script type='text/javascript' src='https://ajax.aspnetcdn.com/ajax/knockout/knockout-3.1.0.js'></script>
   <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/dropzone/4.0.1/dropzone.css">
-
-
-   <link href="signin.css" rel="stylesheet">
 </head>
 <body>
 <style>
@@ -133,15 +126,15 @@ var ViewModel = function() {
   self.loginError = ko.observable();
   self.ephemerics = ko.observableArray();
   self.apiurl = ko.computed(function () {
-    return "https://www.pharocloud.com/api/ephemerics/user/"+self.ephemericsUserID()+"?auth="+self.ephemericsAuthToken()
+    return "https://www.pharocloud.com/api/ephemerics/user/"+encodeURIComponent(self.ephemericsUserID())+"?auth="+encodeURIComponent(self.ephemericsAuthToken())
   })
 
   self.ephemericurl = function (ephemericHost) {
-    return "https://www.pharocloud.com/api/ephemerics/user/"+self.ephemericsUserID()+"/" + ephemericHost+"?auth="+self.ephemericsAuthToken()
+    return "https://www.pharocloud.com/api/ephemerics/user/"+encodeURIComponent(self.ephemericsUserID())+"/" + encodeURIComponent(ephemericHost)+"?auth="+encodeURIComponent(self.ephemericsAuthToken())
   }
 
   self.ephemericstopurl = function (ephemericHost) {
-    return "https://www.pharocloud.com/api/ephemerics/user/"+self.ephemericsUserID()+"/" + ephemericHost+"/stop?auth="+self.ephemericsAuthToken()
+    return "https://www.pharocloud.com/api/ephemerics/user/"+encodeURIComponent(self.ephemericsUserID())+"/" + encodeURIComponent(ephemericHost)+"/stop?auth="+encodeURIComponent(self.ephemericsAuthToken())
   }
 
   self.delete = function(ephemericHost) {
@@ -179,12 +172,17 @@ var ViewModel = function() {
     $.ajax({
       url: self.apiurl(),
       success: function(resultJson){
-        self.loginOK(true);
-        ConfigureDZone();
-        self.ephemerics(resultJson.ephemerics);
-        self.ephemericsLimit(resultJson.limit);
-        self.ephemericsUsed(resultJson.used);
-        $('[data-toggle="tooltip"]').tooltip();
+        if (resultJson.hasOwnProperty("ephemerics")) {
+          self.loginOK(true);
+          ConfigureDZone();
+          self.ephemerics(resultJson.ephemerics);
+          self.ephemericsLimit(resultJson.limit);
+          self.ephemericsUsed(resultJson.used);
+        }
+        else{
+          self.loginError("Connection failed");
+          self.loginOK(false);
+        }
       },
       error: function(){
         self.loginError("Connection failed");
@@ -195,15 +193,9 @@ var ViewModel = function() {
 
 };
 
-
-
-
 var pageModel = new ViewModel();
 ko.applyBindings(pageModel); // This makes Knockout get to work
 </script>
-
-
-
 
 
 
@@ -226,11 +218,6 @@ function ConfigureDZone() {
     });
   }
 }
-
-
 </script>
-
-
-
 </body>
 </html>
